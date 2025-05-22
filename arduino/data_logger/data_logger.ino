@@ -9,13 +9,13 @@ const int chipSelect = 10;
 File dataFile;
 
 unsigned long lastLogTime = 0;
-const int logInterval = 50; // intervalle de 50 ms (20 Hz)
+const int logInterval = 50;
 
 void setup() {
   Serial.begin(9600);
   Wire.begin();
 
-  // Initialiser MPU6050
+  // MPU6050 init
   Serial.println("Initialisation du MPU6050...");
   mpu.initialize();
   if (!mpu.testConnection()) {
@@ -23,7 +23,7 @@ void setup() {
     while (1);
   }
 
-  // Initialisation carte SD
+  // SD init
   Serial.println("Initialisation de la carte SD...");
   if (!SD.begin(chipSelect)) {
     Serial.println("Erreur : carte SD non détectée !");
@@ -32,7 +32,7 @@ void setup() {
 
   dataFile = SD.open("mpu_logs.csv", FILE_WRITE);
   if (dataFile) {
-    dataFile.println("time_ms,ax,ay,az,gx,gy,gz"); // en-tête CSV
+    dataFile.println("time_ms,ax,ay,az,gx,gy,gz"); // CSV headers
     dataFile.close();
     Serial.println("Fichier de log créé.");
   } else {
@@ -50,9 +50,9 @@ void loop() {
 
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
-    // Conversion brute vers unités SI :
-    float accelScale = 16384.0;     // pour ±2g
-    float gyroScale = 131.0;        // pour ±250°/s
+    // Conversion to standard units:
+    float accelScale = 16384.0;     // for ±2g
+    float gyroScale = 131.0;        // for ±250°/s
 
     float fax = ax / accelScale * 9.81;
     float fay = ay / accelScale * 9.81;
@@ -62,7 +62,7 @@ void loop() {
     float fgy = gy / gyroScale;
     float fgz = gz / gyroScale;
 
-    // Écriture sur carte SD
+    // Writing on SD
     dataFile = SD.open("mpu_logs.csv", FILE_WRITE);
     if (dataFile) {
       dataFile.print(millis());
@@ -80,16 +80,7 @@ void loop() {
       dataFile.println(fgz, 3);
       dataFile.close();
     } else {
-      Serial.println("Erreur écriture SD !");
+      Serial.println("Error writing on SD !");
     }
 
-    // Affichage Serial (optionnel)
-    Serial.print("A: ");
-    Serial.print(fax, 2); Serial.print(", ");
-    Serial.print(fay, 2); Serial.print(", ");
-    Serial.print(faz, 2); Serial.print(" | G: ");
-    Serial.print(fgx, 2); Serial.print(", ");
-    Serial.print(fgy, 2); Serial.print(", ");
-    Serial.println(fgz, 2);
-  }
 }
