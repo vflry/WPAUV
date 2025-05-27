@@ -29,7 +29,7 @@ z = z0
 
 ## Wave characteristics
 wave_amplitude = 0.5  # Amplitude of the wave (m)
-wave_period = 2  # Period of the wave (s)
+wave_period = 1  # Period of the wave (s)
 wave_frequency = 1/wave_period  # Frequency of the wave (Hz)
 
 ## Simulation parameters

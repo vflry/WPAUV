@@ -5,7 +5,7 @@ from ahrs.filters import Mahony
 from scipy.spatial.transform import Rotation as R
 
 # === Load and clean data ===
-df = pd.read_csv("MPU_LOGS.CSV", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
+df = pd.read_csv("logs/MPU_LOGS_PART_3.csv", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
 df = df.apply(pd.to_numeric, errors="coerce").dropna()
 df["time"] /= 1000.0  # ms → s
 df[["gx", "gy", "gz"]] *= np.pi / 180.0  # °/s → rad/s
@@ -42,9 +42,9 @@ yaw = np.degrees(np.unwrap(np.radians(euler[:, 1])))
 roll  = np.degrees(np.unwrap(np.radians(euler[:, 2])))
 
 
-pitch = ((pitch) % 360) - 180
-yaw = ((yaw + 180) % 360) - 180
-roll = ((roll) % 360) - 180
+# pitch = ((pitch) % 360) - 180
+# yaw = ((yaw + 180) % 360) - 180
+# roll = ((roll) % 360) - 180
 
 # === Plot ===
 fig = go.Figure()
