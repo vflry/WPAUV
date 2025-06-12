@@ -26,7 +26,7 @@ def apply_madgwick(beta):
 
 # === Plotly Visualization ===
 fig = go.Figure()
-beta_values = [1.0, 2, 2.5, 3, 4]  # Different beta parameters
+beta_values = [2.5]  # Different beta parameters
 
 for beta in beta_values:
     euler = apply_madgwick(beta)

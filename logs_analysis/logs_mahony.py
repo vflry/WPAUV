@@ -5,7 +5,7 @@ from ahrs.filters import Mahony
 from scipy.spatial.transform import Rotation as R
 
 # === Load and clean data ===
-df = pd.read_csv("logs/MPU_LOGS_PART_3.csv", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
+df = pd.read_csv("logs/MPU_LOGS_PART_1.csv", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
 df = df.apply(pd.to_numeric, errors="coerce").dropna()
 df["time"] /= 1000.0  # ms → s
 df[["gx", "gy", "gz"]] *= np.pi / 180.0  # °/s → rad/s
@@ -13,7 +13,7 @@ df[["gx", "gy", "gz"]] *= np.pi / 180.0  # °/s → rad/s
 # === Apply alignment matrix ===
 R_align = np.array([
     [ 0,  0,  1],
-    [ 0,  1,  0],
+    [ 0, -1,  0],
     [ 1,  0,  0]
 ])
 
@@ -36,10 +36,16 @@ for i in range(len(df)):
 # === Convert quaternions to Euler angles (YXZ ZXY) ===
 
 rot = R.from_quat(quats)
-euler = rot.as_euler('YXZ', degrees=True)
+euler = rot.as_euler('ZXY', degrees=True)
 pitch = np.degrees(np.unwrap(np.radians(euler[:, 0])))
 yaw = np.degrees(np.unwrap(np.radians(euler[:, 1])))
 roll  = np.degrees(np.unwrap(np.radians(euler[:, 2])))
+
+
+def incl_angle(pitch, roll):
+    return np.degrees(np.arctan2(np.sqrt(np.tan(np.radians(pitch))**2 + np.tan(np.radians(roll))**2) , 1))
+
+inclination = incl_angle(pitch, roll)
 
 
 # pitch = ((pitch) % 360) - 180
@@ -51,9 +57,10 @@ fig = go.Figure()
 fig.add_trace(go.Scatter(x=df["time"], y=roll, mode="lines", name="Roll"))
 fig.add_trace(go.Scatter(x=df["time"], y=pitch, mode="lines", name="Pitch"))
 fig.add_trace(go.Scatter(x=df["time"], y=yaw, mode="lines", name="Yaw"))
+fig.add_trace(go.Scatter(x=df["time"], y=inclination, mode="lines", name="Inclination"))
 
 fig.update_layout(
-    title="Orientation: Roll, Pitch, Yaw (Robust to Gimbal Lock)",
+    title="Orientation: Roll, Pitch, Yaw",
     xaxis_title="Time (s)",
     yaxis_title="Angle (°)",
     legend_title="Legend",

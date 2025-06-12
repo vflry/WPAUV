@@ -9,7 +9,7 @@ from matplotlib.animation import FuncAnimation
 from scipy.spatial.transform import Rotation as R
 
 # === Load and clean data ===
-df = pd.read_csv("logs/MPU_LOGS_PART_1.csv", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
+df = pd.read_csv("logs/MPU_LOGS_PART_3.csv", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
 df = df.apply(pd.to_numeric, errors="coerce").dropna()
 df["time"] /= 1000.0  # ms → s
 df[["gx", "gy", "gz"]] *= np.pi / 180.0  # °/s → rad/s
