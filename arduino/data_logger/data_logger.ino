@@ -42,6 +42,7 @@ void setup() {
 }
 
 void loop() {
+  delay(25);
   if (millis() - lastLogTime >= logInterval) {
     lastLogTime = millis();
 
@@ -82,5 +83,6 @@ void loop() {
     } else {
       Serial.println("Error writing on SD !");
     }
+  }
 
 }
