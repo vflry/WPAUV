@@ -10,6 +10,7 @@ File logFile;
 // --------- Analog config ----------
 const int PIN_A0_ADC = A0;
 const int PIN_A1_ADC = A1;
+const int PIN_A2_ADC = A2;     // NEW: sortie DC du full bridge
 const bool USE_EXTERNAL_AREF = false; // true si AREF=3.3V câblé
 const float VREF = 5.000;             // 5.000 si DEFAULT, 3.300 si EXTERNAL
 
@@ -31,7 +32,6 @@ inline float countsToVolt(int counts) {
 
 // Accélérer l'ADC: prescaler=32 (Fadc=500 kHz à 16 MHz), un peu moins précis mais plus rapide
 void setFastADC() {
-  // ADPS2:0 = 0b101 -> prescaler 32
   ADCSRA = (ADCSRA & ~((1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0))) | (1<<ADPS2) | (1<<ADPS0);
 }
 
@@ -41,19 +41,18 @@ void printFloat(File& f, float val, int precision = 3) {
   f.print(buf);
 }
 
-
 void setup() {
   Serial.begin(115200);
   Wire.begin();
 
   // ADC reference
   if (USE_EXTERNAL_AREF) {
-    analogReference(EXTERNAL);     // AREF=3.3V + 100nF -> VREF=3.3
+    analogReference(EXTERNAL);
   } else {
-    analogReference(DEFAULT);      // ~5V (AVcc)
+    analogReference(DEFAULT);
   }
 
-  setFastADC(); // accélère analogRead()
+  setFastADC();
 
   // SPI master stable
   pinMode(53, OUTPUT);
@@ -68,7 +67,7 @@ void setup() {
   }
   sensor.setDistanceMode(VL53L1X::Short);
   sensor.setMeasurementTimingBudget(20000); // 20 ms
-  sensor.startContinuous(1); // cadence interne libre; on lira quand "dataReady"
+  sensor.startContinuous(1);
 
   // SD init
   Serial.println(F("Initializing SD card..."));
@@ -83,7 +82,8 @@ void setup() {
     while (1);
   }
 
-  logFile.println(F("Time_ms,Distance_mm,VA0_V,VA1_V"));
+  // NEW: ajout colonne VA2_V
+  logFile.println(F("Time_ms,Distance_mm,VA0_V,VA1_V,VA2_V"));
   logFile.flush();
   Serial.println(F("Logging started!"));
 }
@@ -92,7 +92,7 @@ void loop() {
   static uint32_t t0 = millis();
   static uint32_t nextAnalogTick = micros();
 
-  // 1) Lire le VL53 seulement quand une nouvelle mesure est prête (~50 Hz)
+  // 1) Lire le VL53 seulement quand nouvelle mesure prête
   if (sensor.dataReady()) {
     int d = sensor.read();
     if (!sensor.timeoutOccurred()) {
@@ -101,32 +101,31 @@ void loop() {
     }
   }
 
-  // 2) Echantillonnage analogique cadencé (1 kHz par défaut)
+  // 2) Echantillonnage analogique cadencé
   uint32_t now = micros();
   if ((int32_t)(now - nextAnalogTick) >= 0) {
     nextAnalogTick += ANALOG_PERIOD_US;
 
-    // Lecture brute sans averaging (1 lecture = plus rapide)
     int c0 = analogRead(PIN_A0_ADC);
     int c1 = analogRead(PIN_A1_ADC);
+    int c2 = analogRead(PIN_A2_ADC); // NEW: lecture sortie DC pont
 
     float vA0 = countsToVolt(c0);
     float vA1 = countsToVolt(c1);
+    float vA2 = countsToVolt(c2); // NEW: conversion volts
+
     uint32_t t_ms = millis() - t0;
 
-
-    // Ecriture CSV
+    // Ecriture CSV avec VA2
     logFile.print(t_ms); logFile.print(',');
     logFile.print(lastDistance); logFile.print(',');
     printFloat(logFile, vA0, 3); logFile.print(',');
-    printFloat(logFile, vA1, 3); logFile.println();
-
+    printFloat(logFile, vA1, 3); logFile.print(',');
+    printFloat(logFile, vA2, 3); logFile.println();
 
     if (++lines_since_flush >= FLUSH_EVERY_N_LINES) {
       logFile.flush();
       lines_since_flush = 0;
     }
   }
-
-  // Pas de delay() ici -> la cadence est pilotée par micros()
 }

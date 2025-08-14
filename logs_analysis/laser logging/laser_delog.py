@@ -7,6 +7,8 @@ import plotly.io as pio
 # Évite les soucis de compatibilité de templates Plotly
 pio.templates.default = "none"
 
+offset_voltage = 2.5 #V
+
 def clean_file(input_file, output_file):
     """
     Clean the binary file by removing non-ASCII bytes (keeps CR/LF/TAB).
@@ -26,9 +28,9 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
     Handles restarts and time offsets.
     Returns: time, distance, va0, va1, deltav
     """
-    time_list, dist_list, va0_list, va1_list, dv_list = [], [], [], [], []
+    time_list, dist_list, va0_list, va1_list, va2_list, dv_list = [], [], [], [], [], []
 
-    header_tokens = ("Time_ms", "Distance_mm", "VA0_V", "VA1_V")
+    header_tokens = ("Time_ms", "Distance_mm", "VA0_V", "VA1_V", "VA2_V")
 
     time_offset = 0.0
     last_time = None
@@ -54,20 +56,22 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
             if any(c.strip() == "" for c in row):  # Empty value between commas
                 continue
             nums = re.findall(r"[-+]?\d+(?:\.\d+)?", row_joined)
-            if len(nums) < 4:
+            if len(nums) != 5:
                 if any(tok in row_joined for tok in header_tokens):
-                    print(f"↩️ Restart detected in corrupted line {line_num}")
+                    print(f"↩️ Restart detected in line {line_num}")
                     if last_time is not None:
                         time_offset += last_time
                     last_time = 0.0
                     continue
-                continue  # Not enough usable numbers
+                print(f"⚠️ Skipped line {line_num}: expected 5 numbers, found {len(nums)}")
+                continue  # Not the right amount of data
 
             try:
                 t = float(nums[0])
                 d = float(nums[1])
                 va0 = float(nums[2])
                 va1 = float(nums[3])
+                va2 = float(nums[4])
                 dv = va0 - va1
 
                 # Skip clearly invalid data
@@ -75,7 +79,7 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
                     raise ValueError(f"Time out of bounds: {t}")
                 if not (dist_min <= d <= dist_max):
                     raise ValueError(f"Distance out of range: {d}")
-                if not (-0.5 <= va0 <= 5.5) or not (-0.5 <= va1 <= 5.5):
+                if not (-0.5 <= va0 <= 5.5) or not (-0.5 <= va1 <= 5.5) or not (-0.5 <= va2 <= 5.5):
                     raise ValueError(f"Voltage out of plausible range: {va0}, {va1}")
 
                 # Handle time rollback or large jumps
@@ -94,6 +98,7 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
                 dist_list.append(d)
                 va0_list.append(va0)
                 va1_list.append(va1)
+                va2_list.append(va2-offset_voltage)
                 dv_list.append(dv)
 
                 last_time = t
@@ -103,11 +108,11 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
                 # print(f"⚠️ Skipped line {line_num}: {e}")
                 continue
 
-    return time_list, dist_list, va0_list, va1_list, dv_list
+    return time_list, dist_list, va0_list, va1_list, va2_list, dv_list
 
 
 
-def plot_data(time_data, distance_data, va0_data, va1_data, deltav_data):
+def plot_data(time_data, distance_data, va0_data, va1_data, va2_data, deltav_data):
     """
     Plot VA0, VA1, ΔV on primary y-axis (V) and Distance on secondary y-axis (mm).
     """
@@ -120,7 +125,8 @@ def plot_data(time_data, distance_data, va0_data, va1_data, deltav_data):
     # Voltages (primary y)
     fig.add_trace(go.Scattergl(x=time_data, y=va0_data, mode="lines", name="VA0 (V)"))
     fig.add_trace(go.Scattergl(x=time_data, y=va1_data, mode="lines", name="VA1 (V)"))
-    fig.add_trace(go.Scattergl(x=time_data, y=deltav_data, mode="lines", name="DeltaV (V)"))
+    fig.add_trace(go.Scattergl(x=time_data, y=va2_data, mode="lines", name="V_DC (V)"))
+    fig.add_trace(go.Scattergl(x=time_data, y=deltav_data, mode="lines", name="V_AC (V)"))
 
     # Distance (secondary y)
     fig.add_trace(go.Scattergl(
@@ -147,7 +153,7 @@ if __name__ == "__main__":
     clean_file(raw_file, cleaned_file)
 
     # 2) Lecture robuste
-    t, d, va0, va1, dv = read_csv_data(cleaned_file)
+    t, d, va0, va1, va2, dv = read_csv_data(cleaned_file)
 
     # 3) Tracé
-    plot_data(t, d, va0, va1, dv)
+    plot_data(t, d, va0, va1, va2, dv)

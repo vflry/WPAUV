@@ -14,7 +14,7 @@ g = 9.81  # gravity (m/s^2)
 
 m = 0.25 # Mass of the oscillating mass (kg)
 mu_mag = 1.8
-mu_friction = 0
+mu_friction = 5
 mu = mu_mag + mu_friction  # Damping coefficient of the oscillating mass (kg/s)
 k = 237  # Spring constant of the oscillating mass (N/m)
 
@@ -30,7 +30,7 @@ B = 0.2
 
 ## Oscillation parameters
 
-amplitude = 0.2
+amplitude = 0.1
 frequency = 4 # Frequency of the oscillation (Hz)
 
 ## Simulation parameters
@@ -51,15 +51,12 @@ def z(t):
 def vz(t):
     return 2 * np.pi * frequency * amplitude * np.cos(2 * np.pi * frequency * t)
 
-z_values = z(t_values)
-vz_values = vz(t_values)
-
 
 def f(t, x_vec):
     """Derivates the state vector."""
     y, vy = x_vec
-    dydt = vz(t)
-    d2ydt = -(m*g + k*(y-z(t)) + mu * (vy-vz(t))) / m
+    dydt = vy
+    d2ydt = -(k*(y-z(t)) + mu * (vy-vz(t))) / m
 
     return np.array([dydt, d2ydt])
 
@@ -80,20 +77,22 @@ X = np.array(X)
 t_values = np.array(t_values)
 y_values = X[:, 0]
 vy_values = X[:, 1]
+z_values = z(t_values)
+vz_values = vz(t_values)
+power = mu_mag * (vz_values - vy_values) ** 2
 
 
 
-
-# Plot results using Plotly with two y-axes
+# Plot results using Plotly with a single y-axis
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=t_values, y=y_values-z_values, mode='lines', name='Displacement (y-z)', yaxis='y1'))
-fig.add_trace(go.Scatter(x=t_values, y=vz_values, mode='lines', name='Velocity (vz)', yaxis='y1'))
-fig.add_trace(go.Scatter(x=t_values, y=vy_values-vz_values, mode='lines', name='Velocity (vy-vz)', yaxis='y2'))
+fig.add_trace(go.Scatter(x=t_values, y=vz_values, mode='lines', name='Velocity (vz) in m/s'))
+fig.add_trace(go.Scatter(x=t_values, y=(y_values-z_values)*100, mode='lines', name='Displacement (y-z) in cm'))
+fig.add_trace(go.Scatter(x=t_values, y=vy_values-vz_values, mode='lines', name='Velocity (vy-vz) in m/s'))
+fig.add_trace(go.Scatter(x=t_values, y=power, mode='lines', name='Power in W'))
 fig.update_layout(
     title='Oscillating Mass Simulation',
     xaxis_title='Time (s)',
-    yaxis=dict(title='Displacement (y-z)'),
-    yaxis2=dict(title='Velocity (vy-vz)', overlaying='y', side='right'),
+    yaxis=dict(title='Values'),
     legend_title='Variables'
 )
 fig.show()
