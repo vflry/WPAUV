@@ -1,4 +1,4 @@
-## Vianney Fleury - ENSTA / University of Adelaide - 2025
+# Vianney Fleury - ENSTA / University of Adelaide - 2025
 
 import numpy as np
 import plotly.graph_objects as go
@@ -6,28 +6,23 @@ import plotly.graph_objects as go
 from linear_oscillations.mu_tests import vy_values
 from linear_oscillations.oscillations_sim_withmass_display import vz_values
 
-## Simulation constants
-
+# Simulation constants
 g = 9.81  # gravity (m/s^2)
 rho_water = 1000  # water density (kg/m^3)
 
-
-## Simulation variables
-
-## AUV characteristics
+# AUV characteristics
 length_auv = 0.6  # Length of the AUV (m)
 diam_auv = 0.15  # Diameter of the AUV (m)
 section_auv = np.pi * (diam_auv / 2) ** 2  # Cross-sectional area of the AUV (m^2)
 m0 = 0.5  # Mass of the AUV (kg)
 
-c0 = 0.02 # Damping coef
-
+c0 = 0.02 # Damping coefficient
 
 x0 = m0/(rho_water * section_auv)  # Equilibrium depth of the AUV (m)
 z0 = 0 # Initial position of the AUV (m)
 z = z0
 
-## Oscillating mass characteristics
+# Oscillating mass characteristics
 m1 = 0.3 # Mass of the oscillating mass (kg)
 mu = 0.1 # Damping coefficient of the oscillating mass (N.s/m) - 0 for now
 k1s = np.linspace(0, 60, 200)  # Spring constants of the oscillating mass (N/m)

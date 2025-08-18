@@ -4,27 +4,26 @@ import plotly.graph_objects as go
 from ahrs.filters import Mahony
 from scipy.spatial.transform import Rotation as R
 
-# === Load and clean data ===
+# Load and clean data
 df = pd.read_csv("logs/MPU_LOGS_PART_1.csv", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
 df = df.apply(pd.to_numeric, errors="coerce").dropna()
 df["time"] /= 1000.0  # ms → s
 df[["gx", "gy", "gz"]] *= np.pi / 180.0  # °/s → rad/s
 
-# === Apply alignment matrix ===
+# Apply alignment matrix
 R_align = np.array([
     [ 0,  0,  1],
     [ 0, -1,  0],
     [ 1,  0,  0]
 ])
 
-
-# === Rotate sensor data ===
+# Rotate sensor data
 acc_raw = df[["ax", "ay", "az"]].to_numpy()
 gyr_raw = df[["gx", "gy", "gz"]].to_numpy()
 acc = (R_align @ acc_raw.T).T
 gyr = (R_align @ gyr_raw.T).T
 
-# === Mahony filter ===
+# Mahony filter
 mahony = Mahony(sampleperiod=np.mean(np.diff(df["time"])), kp=20.0)
 quats = np.zeros((len(df), 4))
 q = np.array([1.0, 0.0, 0.0, 0.0])
@@ -33,8 +32,7 @@ for i in range(len(df)):
     q = mahony.updateIMU(q, gyr[i], acc[i])
     quats[i] = q
 
-# === Convert quaternions to Euler angles (YXZ ZXY) ===
-
+# Convert quaternions to Euler angles (ZXY)
 rot = R.from_quat(quats)
 euler = rot.as_euler('ZXY', degrees=True)
 pitch = np.degrees(np.unwrap(np.radians(euler[:, 0])))

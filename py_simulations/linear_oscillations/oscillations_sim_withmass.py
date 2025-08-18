@@ -1,9 +1,9 @@
-## Vianney Fleury - ENSTA / University of Adelaide - 2025
+# Vianney Fleury - ENSTA / University of Adelaide - 2025
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-## Simulation constants
+# Simulation constants
 
 g = 9.81  # gravity (m/s^2)
 rho_water = 1000  # water density (kg/m^3)

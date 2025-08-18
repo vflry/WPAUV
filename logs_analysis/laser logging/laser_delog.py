@@ -4,7 +4,7 @@ import os
 import plotly.graph_objects as go
 import plotly.io as pio
 
-# Évite les soucis de compatibilité de templates Plotly
+# Avoid Plotly template compatibility issues
 pio.templates.default = "none"
 
 offset_voltage = 2.5 #V
@@ -52,7 +52,7 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
                 last_time = 0.0
                 continue
 
-            # Try extracting up to 5 float numbers
+            # Try extracting 5 float numbers
             if any(c.strip() == "" for c in row):  # Empty value between commas
                 continue
             nums = re.findall(r"[-+]?\d+(?:\.\d+)?", row_joined)
@@ -74,7 +74,7 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
                 va2 = float(nums[4])
                 dv = va0 - va1
 
-                # Skip clearly invalid data
+                # Skip corrupted data
                 if t < 0 or t > 1e6:
                     raise ValueError(f"Time out of bounds: {t}")
                 if not (dist_min <= d <= dist_max):
@@ -82,7 +82,7 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
                 if not (-0.5 <= va0 <= 5.5) or not (-0.5 <= va1 <= 5.5) or not (-0.5 <= va2 <= 5.5):
                     raise ValueError(f"Voltage out of plausible range: {va0}, {va1}")
 
-                # Handle time rollback or large jumps
+                # Detect restart / time jump
                 if last_time is not None:
                     delta = t - last_time
                     if delta < -restart_margin_ms:
@@ -104,8 +104,6 @@ def read_csv_data(csv_file, dist_min=0, dist_max=4000, restart_margin_ms=100, ma
                 last_time = t
 
             except Exception as e:
-                # Optionally print debug info
-                # print(f"⚠️ Skipped line {line_num}: {e}")
                 continue
 
     return time_list, dist_list, va0_list, va1_list, va2_list, dv_list
@@ -122,13 +120,13 @@ def plot_data(time_data, distance_data, va0_data, va1_data, va2_data, deltav_dat
 
     fig = go.Figure()
 
-    # Voltages (primary y)
+    # Voltages
     fig.add_trace(go.Scattergl(x=time_data, y=va0_data, mode="lines", name="VA0 (V)"))
     fig.add_trace(go.Scattergl(x=time_data, y=va1_data, mode="lines", name="VA1 (V)"))
     fig.add_trace(go.Scattergl(x=time_data, y=va2_data, mode="lines", name="V_DC (V)"))
     fig.add_trace(go.Scattergl(x=time_data, y=deltav_data, mode="lines", name="V_AC (V)"))
 
-    # Distance (secondary y)
+    # Distance
     fig.add_trace(go.Scattergl(
         x=time_data, y=distance_data, mode="lines", name="Distance (mm)", yaxis="y2"
     ))
@@ -145,15 +143,12 @@ def plot_data(time_data, distance_data, va0_data, va1_data, va2_data, deltav_dat
 
 
 if __name__ == "__main__":
-    # Chemin d'entrée (adapte si besoin)
-    raw_file = "/Users/vianneyfleury/Downloads/MESURES.CSV"   # même nom que dans ton sketch
+    # file path
+    raw_file = "<logs/MESURES2.CSV"
     cleaned_file = "mesures_clean.csv"
 
-    # 1) Nettoyage
     clean_file(raw_file, cleaned_file)
 
-    # 2) Lecture robuste
     t, d, va0, va1, va2, dv = read_csv_data(cleaned_file)
 
-    # 3) Tracé
     plot_data(t, d, va0, va1, va2, dv)

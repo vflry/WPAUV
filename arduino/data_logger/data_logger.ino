@@ -15,28 +15,26 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
 
-  // MPU6050 init
-  Serial.println("Initialisation du MPU6050...");
+  Serial.println("Initializing MPU6050...");
   mpu.initialize();
   if (!mpu.testConnection()) {
-    Serial.println("Erreur : MPU6050 non connecté !");
+    Serial.println("Error: MPU6050 not connected!");
     while (1);
   }
 
-  // SD init
-  Serial.println("Initialisation de la carte SD...");
+  Serial.println("Initializing SD card...");
   if (!SD.begin(chipSelect)) {
-    Serial.println("Erreur : carte SD non détectée !");
+    Serial.println("Error: SD card not detected!");
     while (1);
   }
 
   dataFile = SD.open("mpu_logs.csv", FILE_WRITE);
   if (dataFile) {
-    dataFile.println("time_ms,ax,ay,az,gx,gy,gz"); // CSV headers
+    dataFile.println("time_ms,ax,ay,az,gx,gy,gz");
     dataFile.close();
-    Serial.println("Fichier de log créé.");
+    Serial.println("Log file created.");
   } else {
-    Serial.println("Erreur : impossible de créer le fichier.");
+    Serial.println("Error: cannot create file.");
     while (1);
   }
 }
@@ -51,9 +49,9 @@ void loop() {
 
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
-    // Conversion to standard units:
-    float accelScale = 16384.0;     // for ±2g
-    float gyroScale = 131.0;        // for ±250°/s
+    // Convert to standard units
+    float accelScale = 16384.0;     // ±2g range
+    float gyroScale = 131.0;        // ±250°/s range
 
     float fax = ax / accelScale * 9.81;
     float fay = ay / accelScale * 9.81;
@@ -63,7 +61,6 @@ void loop() {
     float fgy = gy / gyroScale;
     float fgz = gz / gyroScale;
 
-    // Writing on SD
     dataFile = SD.open("mpu_logs.csv", FILE_WRITE);
     if (dataFile) {
       dataFile.print(millis());
@@ -81,7 +78,7 @@ void loop() {
       dataFile.println(fgz, 3);
       dataFile.close();
     } else {
-      Serial.println("Error writing on SD !");
+      Serial.println("Error writing to SD!");
     }
   }
 

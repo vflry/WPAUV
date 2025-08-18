@@ -4,7 +4,7 @@ from itertools import permutations, product
 from ahrs.filters import Mahony
 from scipy.spatial.transform import Rotation as R
 
-# Charger les données
+# Load data
 df = pd.read_csv("MPU_LOGS.CSV", names=["time", "ax", "ay", "az", "gx", "gy", "gz"])
 df = df.apply(pd.to_numeric, errors="coerce").dropna()
 df["time"] /= 1000.0  # ms → s
@@ -13,7 +13,7 @@ df[["gx", "gy", "gz"]] *= np.pi / 180.0  # °/s → rad/s
 acc_raw = df[["ax", "ay", "az"]].to_numpy()
 gyr_raw = df[["gx", "gy", "gz"]].to_numpy()
 
-# Générer les 48 combinaisons possibles de matrices d'alignement
+# Generate 48 possible alignment matrix combinations
 axis_permutations = list(permutations(range(3)))
 sign_combinations = list(product([-1, 1], repeat=3))
 all_alignments = []
@@ -25,7 +25,7 @@ for perm in axis_permutations:
             mat[i, idx] = signs[i]
         all_alignments.append(mat)
 
-# Tester chaque matrice
+# Test each matrix
 results = []
 for i, R_align in enumerate(all_alignments):
     acc = (R_align @ acc_raw.T).T

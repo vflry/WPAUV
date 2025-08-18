@@ -1,60 +1,35 @@
 # Simulation for the seaturns design
 
-# Import necessary libraries
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
 
-# Design parameters
-
-###################
-# Tank dimensions #
-###################
-
+# Tank dimensions
 tank_inner_diam = 4 # m
 tank_outer_diam = 6 # m
 tank_length = 10 # m
-#   Tank volume
 tank_vol = np.pi * (tank_outer_diam**2 - tank_inner_diam**2) * tank_length # m^3
 
-# We assume the tank is filled halfway with water
-water_vol = tank_vol / 2 # m^3
+water_vol = tank_vol / 2 # m^3 (assuming tank is half filled)
 water_mass = water_vol * 1000 # kg
 
-# Air / Water interface area
-section_area = (tank_outer_diam-tank_inner_diam)*tank_length/2 # m^2
+section_area = (tank_outer_diam-tank_inner_diam)*tank_length/2 # m^2 (air/water interface)
 
-
-########################
-# Wave characteristics #
-########################
-
+# Wave characteristics
 wave_height = 1.8 # m
 wave_period = 10 # s
 wave_frequency = 1 / wave_period # Hz
 
-
-###########################
-# Turbine characteristics #
-###########################
-
+# Turbine characteristics
 turbine_diam = 1 # m
 turbine_efficiency = 0.5
 turbine_area = np.pi * (turbine_diam / 2)**2 # m^2
 
 air_density = 1.2 # kg/m^3
 
+max_roll = 0.8 # rad (maximum roll angle assumption)
 
-
-
-
-# Assumption : max roll angle
-max_roll = 0.8 # rad
-
-# The tank will roll from -max_roll to max_roll and back to -max_roll in a wave period
-# The roll speed will follow a sine curve
-
-# Roll angle as a function of time :
+# Roll angle as a function of time
 def roll_angle(t):
     return max_roll * np.sin(2 * np.pi * (t+wave_period/4) / wave_period)
 
